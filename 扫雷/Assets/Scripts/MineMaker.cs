@@ -6,8 +6,8 @@ using UnityEngine.Tilemaps;
 public class MineMaker : MonoBehaviour
 {
     private Tilemap _BackMap;
-    [SerializeField] private Tile _MineTile;
-    [SerializeField] private Tile[] _MarkingTiles;
+    public Tile _MineTile;
+    public Tile[] _MarkingTiles;
 
     [SerializeField] private int _XCount = 9, _YCount = 9;
     [SerializeField] private int _MineCount = 10;
@@ -152,4 +152,32 @@ public class MineMaker : MonoBehaviour
             }
         }
     }
+
+    private bool isPosValid(Vector3Int vp)
+    {
+        if (vp.x < 0 || vp.y < 0 || vp.x >= _XCount || vp.y >= _YCount)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+
+
+    #region Public Area
+
+    public bool isMineByPos(Vector3Int vp)
+    {
+        return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MineTile);
+    }
+
+    public bool isEmptyByPos(Vector3Int vp)
+    {
+        return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MarkingTiles[0]);
+    }
+
+    #endregion
 }
