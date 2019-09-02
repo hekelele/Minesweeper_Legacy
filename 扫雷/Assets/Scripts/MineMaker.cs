@@ -16,9 +16,6 @@ public class MineMaker : MonoBehaviour
     private void Awake()
     {
         _BackMap = GetComponent<Tilemap>();
-        makeMineField(_MineCount);
-        makeMarkingNumbers();
-
     }
 
 
@@ -105,8 +102,9 @@ public class MineMaker : MonoBehaviour
     }
 
     // 随机布雷
-    private void makeMineField(int mineNumber)
+    private void makeMineField()
     {
+        int mineNumber = _MineCount;
         if (mineNumber > _XCount * _YCount)
         {
             Debug.LogError("too many mine!");
@@ -177,6 +175,28 @@ public class MineMaker : MonoBehaviour
     public bool isEmptyByPos(Vector3Int vp)
     {
         return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MarkingTiles[0]);
+    }
+
+    public void makeMines(int x, int y, int mineNum)
+    {
+        _XCount = x;
+        _YCount = y;
+        _MineCount = mineNum;
+        _BackMap.ClearAllTiles();
+        makeMineField();
+        makeMarkingNumbers();
+    }
+
+    public void makeMines()
+    {
+        _BackMap.ClearAllTiles();
+        makeMineField();
+        makeMarkingNumbers();
+    }
+
+    public int getMineNumber()
+    {
+        return _MineCount;
     }
 
     #endregion
