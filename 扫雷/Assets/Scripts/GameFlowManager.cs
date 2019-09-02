@@ -75,51 +75,35 @@ public class GameFlowManager : MonoBehaviour
         
         if (!_MM.isMineByPos(clickPos))
         {
-            waitList.Add(clickPos);
-            checkedList.Add(clickPos);
-            int looptime = 0;
-            while (waitList.Count > 0 && looptime < 10000)
+            if (_MM.isEmptyByPos(clickPos))
             {
-                looptime++;
-                if (!_MM.isMineByPos(waitList[0]))
+                waitList.Add(clickPos);
+                int loopNum = 0;
+                while (waitList.Count > 0 || loopNum > 5000)
                 {
-                    if (_MM.isEmptyByPos(waitList[0]))
+                    loopNum++;
+                    vps.Add(waitList[0]);
+                    Vector3Int[] neighbours = new Vector3Int[4] {
+                        new Vector3Int(waitList[0].x+1,waitList[0].y,0), new Vector3Int(waitList[0].x-1, waitList[0].y, 0),
+                        new Vector3Int(waitList[0].x, waitList[0].y+1, 0), new Vector3Int(waitList[0].x, waitList[0].y-1, 0) };
+                    for(int i=0; i<neighbours.Length; i++)
                     {
-                        for(int i=0; i<9; i++)
+                        if (!checkedList.Contains(neighbours[i]))
                         {
-                            if (i == 4)
+                            checkedList.Add(neighbours[i]);
+                            if (_MM.isEmptyByPos(neighbours[i]))
                             {
-                                continue;
+                                waitList.Add(neighbours[i]);
+                                vps.Add(neighbours[i]);
                             }
-                            else
+                            else if (!_MM.isMineByPos(neighbours[i]))
                             {
-                                int m = i / 3 - 1;
-                                int n = i % 3 - 1;
-                                Vector3Int temp;
-                                temp = new Vector3Int(waitList[0].x + m, waitList[0].y + n, 0);
-                                if (!checkedList.Contains(temp))
-                                {
-                                    waitList.Add(temp);
-                                    checkedList.Add(temp);
-                                }
+                                vps.Add(neighbours[i]);
                             }
-                        }
-
-                        if (!vps.Contains(waitList[0]))
-                        {
-                            vps.Add(waitList[0]);
                         }
                     }
-                    else
-                    {
-                        if (!vps.Contains(waitList[0]))
-                        {
-                            vps.Add(waitList[0]);
-                        }
-                    }
+                    waitList.RemoveAt(0);
                 }
-
-                waitList.RemoveAt(0);
             }
         }
         else
