@@ -9,6 +9,15 @@ public class MineMaker : MonoBehaviour
     public Tile _MineTile;
     public Tile[] _MarkingTiles;
 
+    public enum MineSpreadType
+    {
+        NONE,
+        SAFE,
+        CLEAR
+    }
+
+    public MineSpreadType _MineType = MineSpreadType.NONE;
+
     [SerializeField] private int _XCount = 9, _YCount = 9;
     [SerializeField] private int _MineCount = 10;
     
@@ -32,6 +41,19 @@ public class MineMaker : MonoBehaviour
             xx = i % _XCount;
             yy = i / _XCount;
             return new Vector2Int(xx, yy);
+        }
+    }
+
+    // 通过坐标获取索引
+    private int getTileIndexByPos(Vector3Int vp)
+    {
+        if (isPosValid(vp))
+        {
+            return vp.y * _XCount + vp.x;
+        }
+        else
+        {
+            return -1;
         }
     }
 
@@ -102,19 +124,59 @@ public class MineMaker : MonoBehaviour
     }
 
     // 随机布雷
-    private void makeMineField()
+    private void makeMineField(Vector3Int clickTilePos)
     {
         int mineNumber = _MineCount;
-        if (mineNumber > _XCount * _YCount)
+        int maxMineNumber;
+        List<int> safePos = new List<int>();
+        switch (_MineType)
+        {
+            case MineSpreadType.NONE:
+                maxMineNumber = _XCount * _YCount;
+                break;
+            case MineSpreadType.SAFE:
+                maxMineNumber = _XCount * _YCount - 1;
+                int id =getTileIndexByPos(clickTilePos);
+                if (id > 0)
+                {
+                    safePos.Add(id);
+                }
+                break;
+            case MineSpreadType.CLEAR:
+            default:
+                maxMineNumber = _XCount * _YCount - 9;
+                for(int m=-1; m<2; m++)
+                {
+                    for(int n=-1; n<2; n++)
+                    {
+                        int id2 = getTileIndexByPos(new Vector3Int(clickTilePos.x + m, clickTilePos.y + n, 0));
+                        if (id2 > 0)
+                        {
+                            safePos.Add(id2);
+                        }
+                    }
+                }
+                break;
+        }
+
+        if (mineNumber > maxMineNumber)
         {
             Debug.LogError("too many mine!");
-            mineNumber = _XCount * _YCount;
+            mineNumber = maxMineNumber;
         }
 
         int[] flags = new int[_XCount * _YCount];
+        
         for(int i=0; i<flags.Length; i++)
         {
-            flags[i] = i;
+            if (!safePos.Contains(i))
+            {
+                flags[i] = i;
+            }
+            else
+            {
+                flags[i] = -1;
+            }
         }
 
         for(int i=0; i<flags.Length-1; i++)
@@ -123,9 +185,19 @@ public class MineMaker : MonoBehaviour
             (flags[i], flags[ri]) = (flags[ri], flags[i]);
         }
 
-        for(int i=0; i<mineNumber; i++)
+        int mines = 0;
+        for (int i = 0; i < mineNumber + (_XCount * _YCount - maxMineNumber); i++)
         {
-            setTileByIndex(flags[i],_MineTile);
+            int pos = flags[i];
+            if (pos >= 0)
+            {
+                setTileByIndex(pos, _MineTile);
+                mines++;
+            }
+            if (mines >= mineNumber)
+            {
+                break;
+            }
         }
     }
 
@@ -177,20 +249,20 @@ public class MineMaker : MonoBehaviour
         return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MarkingTiles[0]);
     }
 
-    public void makeMines(int x, int y, int mineNum)
+    public void makeMines(int x, int y, int mineNum, Vector3 vp)
     {
         _XCount = x;
         _YCount = y;
         _MineCount = mineNum;
         _BackMap.ClearAllTiles();
-        makeMineField();
+        makeMineField(_BackMap.WorldToCell(vp));
         makeMarkingNumbers();
     }
 
-    public void makeMines()
+    public void makeMines(Vector3 vp)
     {
         _BackMap.ClearAllTiles();
-        makeMineField();
+        makeMineField(_BackMap.WorldToCell(vp));
         makeMarkingNumbers();
     }
 

@@ -41,25 +41,42 @@ public class GameFlowManager : MonoBehaviour
 
     private void Update()
     {
-        if (_State == GameState.RUNNING)
+        if(_State == GameState.WAIT)
         {
             if (Input.GetMouseButtonDown(0))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                _MM.makeMines(pos);
                 _TF.clickTile(pos);
+                _State = GameState.RUNNING;
+                checkWinState();
             }
             else if (Input.GetMouseButtonDown(1))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
             }
-            checkWinState();
+        }
+        else if (_State == GameState.RUNNING)
+        {
+
+            if (Input.GetMouseButtonDown(0))
+            {
+                Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                _TF.clickTile(pos);
+                checkWinState();
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                _TF.changeMarking(pos);
+            }
         }
     }
 
     private void checkWinState()
     {
-        if (_TF.getTileNum() == _MM.getMineNumber())
+        if (_TF.getTileNum() <= _MM.getMineNumber())
         {
             winGame();
         }
@@ -83,9 +100,11 @@ public class GameFlowManager : MonoBehaviour
                 {
                     loopNum++;
                     vps.Add(waitList[0]);
-                    Vector3Int[] neighbours = new Vector3Int[4] {
+                    Vector3Int[] neighbours = new Vector3Int[8] {
                         new Vector3Int(waitList[0].x+1,waitList[0].y,0), new Vector3Int(waitList[0].x-1, waitList[0].y, 0),
-                        new Vector3Int(waitList[0].x, waitList[0].y+1, 0), new Vector3Int(waitList[0].x, waitList[0].y-1, 0) };
+                        new Vector3Int(waitList[0].x, waitList[0].y+1, 0), new Vector3Int(waitList[0].x, waitList[0].y-1, 0),
+                        new Vector3Int(waitList[0].x-1,waitList[0].y-1,0), new Vector3Int(waitList[0].x-1, waitList[0].y+1, 0),
+                        new Vector3Int(waitList[0].x+1, waitList[0].y-1, 0), new Vector3Int(waitList[0].x+1, waitList[0].y+1, 0)};
                     for(int i=0; i<neighbours.Length; i++)
                     {
                         if (!checkedList.Contains(neighbours[i]))
@@ -136,8 +155,7 @@ public class GameFlowManager : MonoBehaviour
     // 重新开始游戏
     public void resetGame()
     {
-        _MM.makeMines();
         _TF.makeField();
-        _State = GameState.RUNNING;
+        _State = GameState.WAIT;
     }
 }

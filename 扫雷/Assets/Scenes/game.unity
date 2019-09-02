@@ -1340,6 +1340,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eb0c3a3d6b897a148b9200d4756ec8db, type: 2}
   - {fileID: 11400000, guid: 7f067d5cf2716bd45be46f422c616d4b, type: 2}
   - {fileID: 11400000, guid: 11025df10bc49504baa5c9b34fd70bb9, type: 2}
+  _MineType: 2
   _XCount: 9
   _YCount: 9
   _MineCount: 10
@@ -2728,7 +2729,7 @@ Tilemap:
   - m_RefCount: 81
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_AnimationFrameRate: 1
-  m_Color: {r: 1, g: 1, b: 1, a: 0.5372549}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Origin: {x: -5, y: -9, z: 0}
   m_Size: {x: 14, y: 18, z: 1}
   m_TileAnchor: {x: 0.5, y: 0.5, z: 0}
