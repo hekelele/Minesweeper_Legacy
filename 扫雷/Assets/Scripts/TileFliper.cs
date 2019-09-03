@@ -9,13 +9,14 @@ public class TileFliper : MonoBehaviour
     public Tile[] _MarkType;
     // 单次调用，清理全部Tile（用于延时标记）
     private bool _ClearAll = false;
-    [SerializeField] private int _XCount = 9, _YCount = 9;
+
+    private int _XCount, _YCount;
 
     private void Awake()
     {
         _FrontMap = GetComponent<Tilemap>();
     }
-
+    
     private void Update()
     {
         if (_ClearAll)
@@ -25,28 +26,15 @@ public class TileFliper : MonoBehaviour
         }
     }
 
-    public void makeField()
+    public void makeField(int xx, int yy)
     {
         _ClearAll = false;
         _FrontMap.ClearAllTiles();
-        for(int m =0; m<_XCount; m++)
+        _XCount = xx;
+        _YCount = yy;
+        for (int m =0; m<_XCount; m++)
         {
             for(int n=0; n<_YCount; n++)
-            {
-                _FrontMap.SetTile(new Vector3Int(m, n, 0), _MarkType[0]);
-            }
-        }
-    }
-
-    public void makeField(int x, int y)
-    {
-        _ClearAll = false;
-        _XCount = x;
-        _YCount = y;
-        _FrontMap.ClearAllTiles();
-        for (int m = 0; m < _XCount; m++)
-        {
-            for (int n = 0; n < _YCount; n++)
             {
                 _FrontMap.SetTile(new Vector3Int(m, n, 0), _MarkType[0]);
             }

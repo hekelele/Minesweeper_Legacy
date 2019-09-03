@@ -5,9 +5,9 @@ using UnityEngine.Tilemaps;
 
 public class MineMaker : MonoBehaviour
 {
-    private Tilemap _BackMap;
-    public Tile _MineTile;
-    public Tile[] _MarkingTiles;
+    private Tilemap     _BackMap;
+    public Tile         _MineTile;
+    public Tile[]       _MarkingTiles;
 
     public enum MineSpreadType
     {
@@ -18,9 +18,8 @@ public class MineMaker : MonoBehaviour
 
     public MineSpreadType _MineType = MineSpreadType.NONE;
 
-    [SerializeField] private int _XCount = 9, _YCount = 9;
-    [SerializeField] private int _MineCount = 10;
-    
+    private int _XCount, _YCount;
+
 
     private void Awake()
     {
@@ -123,10 +122,26 @@ public class MineMaker : MonoBehaviour
         }
     }
 
-    // 随机布雷
-    private void makeMineField(Vector3Int clickTilePos)
+    public void emptyMineField(int xx, int yy)
     {
-        int mineNumber = _MineCount;
+        _BackMap.ClearAllTiles();
+        _XCount = xx;
+        _YCount = yy;
+        for(int i=0; i<xx; i++)
+        {
+            for(int j=0; j<yy; j++)
+            {
+                _BackMap.SetTile(new Vector3Int(i, j, 0), _MarkingTiles[0]);
+            }
+        }
+    }
+
+    // 随机布雷
+    private void makeMineField(Vector3Int clickTilePos, int xx, int yy, int mm)
+    {
+        _XCount = xx;
+        _YCount = yy;
+        int mineNumber = mm;
         int maxMineNumber;
         List<int> safePos = new List<int>();
         switch (_MineType)
@@ -204,7 +219,7 @@ public class MineMaker : MonoBehaviour
     // 计算标记
     private void makeMarkingNumbers()
     {
-        for(int i=0; i<_XCount*_YCount; i++)
+        for (int i=0; i<_XCount*_YCount; i++)
         {
             if (!isTileEqualByIndex(i, _MineTile))
             {
@@ -248,28 +263,28 @@ public class MineMaker : MonoBehaviour
     {
         return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MarkingTiles[0]);
     }
+    
 
-    public void makeMines(int x, int y, int mineNum, Vector3 vp)
+    public void makeMines(Vector3 vp, int xx, int yy, int mm)
     {
-        _XCount = x;
-        _YCount = y;
-        _MineCount = mineNum;
         _BackMap.ClearAllTiles();
-        makeMineField(_BackMap.WorldToCell(vp));
+        makeMineField(_BackMap.WorldToCell(vp), xx, yy, mm);
         makeMarkingNumbers();
     }
 
-    public void makeMines(Vector3 vp)
+    public bool isPosInCells(Vector3 pos)
     {
-        _BackMap.ClearAllTiles();
-        makeMineField(_BackMap.WorldToCell(vp));
-        makeMarkingNumbers();
+        Vector3Int vp = _BackMap.WorldToCell(pos);
+        if (_BackMap.GetTile(vp) != null)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
-
-    public int getMineNumber()
-    {
-        return _MineCount;
-    }
+    
 
     #endregion
 }

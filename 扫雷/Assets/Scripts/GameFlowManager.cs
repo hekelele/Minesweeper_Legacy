@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameFlowManager : MonoBehaviour
 {
@@ -10,6 +11,13 @@ public class GameFlowManager : MonoBehaviour
 
     public AudioClip _ExplodeSE;
     public AudioClip _WinSE;
+
+    public Transform _GridTransform;
+    public Transform _BorderTransform;
+    public Transform _BackgroundTransform;
+
+    public int _XCount = 9, _YCount = 9;
+    public int _MineCount = 10;
 
     public static GameFlowManager _Main = null;
     public enum GameState
@@ -43,15 +51,18 @@ public class GameFlowManager : MonoBehaviour
     {
         if(_State == GameState.WAIT)
         {
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonUp(0))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                _MM.makeMines(pos);
-                _TF.clickTile(pos);
-                _State = GameState.RUNNING;
-                checkWinState();
+                if (_MM.isPosInCells(pos))
+                {
+                    _MM.makeMines(pos, _XCount, _YCount, _MineCount);
+                    _TF.clickTile(pos);
+                    _State = GameState.RUNNING;
+                    checkWinState();
+                }
             }
-            else if (Input.GetMouseButtonDown(1))
+            else if (Input.GetMouseButtonUp(1))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
@@ -60,13 +71,13 @@ public class GameFlowManager : MonoBehaviour
         else if (_State == GameState.RUNNING)
         {
 
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonUp(0))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.clickTile(pos);
                 checkWinState();
             }
-            else if (Input.GetMouseButtonDown(1))
+            else if (Input.GetMouseButtonUp(1))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
@@ -76,7 +87,7 @@ public class GameFlowManager : MonoBehaviour
 
     private void checkWinState()
     {
-        if (_TF.getTileNum() <= _MM.getMineNumber())
+        if (_TF.getTileNum() <= _MineCount)
         {
             winGame();
         }
@@ -152,10 +163,26 @@ public class GameFlowManager : MonoBehaviour
         _SE.Play();
     }
 
+
     // 重新开始游戏
     public void resetGame()
     {
-        _TF.makeField();
+        _State = GameState.END;
+        _TF.makeField(_XCount, _YCount);
+        _MM.emptyMineField(_XCount, _YCount);
+        float scale;
+        scale = 9f / _YCount;
+        Vector3 vp = _GridTransform.transform.position;
+        vp.x = _XCount * scale / -2f;
+        _GridTransform.transform.position = vp;
+        Vector3 vp2 = _BorderTransform.localScale;
+        Vector3 vp3 = _BackgroundTransform.localScale;
+        vp2.x = vp.x * -2f + 0.5f;
+        vp3.x = vp.x * -2f - 0.5f * scale;
+        _BorderTransform.localScale = vp2;
+        _BackgroundTransform.localScale = vp3;
+    
+        _GridTransform.localScale = new Vector3(scale, scale, 1);
         _State = GameState.WAIT;
     }
 }
