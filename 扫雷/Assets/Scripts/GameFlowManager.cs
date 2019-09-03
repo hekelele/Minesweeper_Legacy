@@ -7,10 +7,8 @@ public class GameFlowManager : MonoBehaviour
 {
     public TileFliper _TF = null;
     public MineMaker _MM = null;
-    public AudioSource _SE;
 
-    public AudioClip _ExplodeSE;
-    public AudioClip _WinSE;
+    public SEPlayer _SE;
 
     public Transform _GridTransform;
     public Transform _BorderTransform;
@@ -56,6 +54,7 @@ public class GameFlowManager : MonoBehaviour
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 if (_MM.isPosInCells(pos))
                 {
+                    _SE.playSE("click");
                     _MM.makeMines(pos, _XCount, _YCount, _MineCount);
                     _TF.clickTile(pos);
                     _State = GameState.RUNNING;
@@ -64,6 +63,7 @@ public class GameFlowManager : MonoBehaviour
             }
             else if (Input.GetMouseButtonUp(1))
             {
+                _SE.playSE("mark");
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
             }
@@ -73,12 +73,14 @@ public class GameFlowManager : MonoBehaviour
 
             if (Input.GetMouseButtonUp(0))
             {
+                _SE.playSE("click");
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.clickTile(pos);
                 checkWinState();
             }
             else if (Input.GetMouseButtonUp(1))
             {
+                _SE.playSE("mark");
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
             }
@@ -149,8 +151,7 @@ public class GameFlowManager : MonoBehaviour
     {
         _State = GameState.WIN;
         _TF.clearAllTilesWhenReady();
-        _SE.clip = _WinSE;
-        _SE.Play();
+        _SE.playSE("win");
     }
 
 
@@ -159,8 +160,7 @@ public class GameFlowManager : MonoBehaviour
     {
         _State = GameState.END;
         _TF.clearAllTilesWhenReady();
-        _SE.clip = _ExplodeSE;
-        _SE.Play();
+        _SE.playSE("explode");
     }
 
 
