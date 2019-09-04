@@ -103,4 +103,22 @@ public class TileFliper : MonoBehaviour
         }
         return num;
     }
+
+    public int getMineMarkNum()
+    {
+        int c = 0;
+        for(int i=0; i<_XCount; i++)
+        {
+            for(int j=0; j<_YCount; j++)
+            {
+                TileBase t = _FrontMap.GetTile(new Vector3Int(i,j,0));
+                if (t == _MarkType[1])
+                {
+                    c++;
+                }
+            }
+        }
+
+        return c;
+    }
 }

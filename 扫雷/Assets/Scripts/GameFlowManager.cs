@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameFlowManager : MonoBehaviour
 {
@@ -14,8 +15,11 @@ public class GameFlowManager : MonoBehaviour
     public Transform _BorderTransform;
     public Transform _BackgroundTransform;
 
+    public Text _MineNumText;
+
     public int _XCount = 9, _YCount = 9;
     public int _MineCount = 10;
+    private int _MineCountMark = 0;
 
     public static GameFlowManager _Main = null;
     public enum GameState
@@ -58,6 +62,7 @@ public class GameFlowManager : MonoBehaviour
                     _MM.makeMines(pos, _XCount, _YCount, _MineCount);
                     _TF.clickTile(pos);
                     _State = GameState.RUNNING;
+                    GameTimer._Main.startTimer();
                     checkWinState();
                 }
             }
@@ -66,11 +71,12 @@ public class GameFlowManager : MonoBehaviour
                 _SE.playSE("mark");
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
+                _MineCountMark = _TF.getMineMarkNum();
+                _MineNumText.text = "" + (_MineCount - _MineCountMark);
             }
         }
         else if (_State == GameState.RUNNING)
         {
-
             if (Input.GetMouseButtonUp(0))
             {
                 _SE.playSE("click");
@@ -83,13 +89,15 @@ public class GameFlowManager : MonoBehaviour
                 _SE.playSE("mark");
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 _TF.changeMarking(pos);
+                _MineCountMark = _TF.getMineMarkNum();
+                _MineNumText.text = "" + (_MineCount - _MineCountMark);
             }
         }
     }
 
     private void checkWinState()
     {
-        if (_TF.getTileNum() <= _MineCount)
+        if (_State == GameState.RUNNING && _TF.getTileNum() <= _MineCount)
         {
             winGame();
         }
@@ -145,6 +153,7 @@ public class GameFlowManager : MonoBehaviour
 
         return vps.ToArray();
     }
+    
 
     // 游戏胜利
     public void winGame()
@@ -152,6 +161,7 @@ public class GameFlowManager : MonoBehaviour
         _State = GameState.WIN;
         _TF.clearAllTilesWhenReady();
         _SE.playSE("win");
+        GameTimer._Main.stopTimer();
     }
 
 
@@ -161,6 +171,7 @@ public class GameFlowManager : MonoBehaviour
         _State = GameState.END;
         _TF.clearAllTilesWhenReady();
         _SE.playSE("explode");
+        GameTimer._Main.stopTimer();
     }
 
 
@@ -181,8 +192,12 @@ public class GameFlowManager : MonoBehaviour
         vp3.x = vp.x * -2f - 0.5f * scale;
         _BorderTransform.localScale = vp2;
         _BackgroundTransform.localScale = vp3;
-    
+
+        _MineCountMark = 0;
+        _MineNumText.text = "" + (_MineCount - _MineCountMark);
+
         _GridTransform.localScale = new Vector3(scale, scale, 1);
         _State = GameState.WAIT;
+        GameTimer._Main.clear();
     }
 }
