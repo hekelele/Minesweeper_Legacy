@@ -47,6 +47,7 @@ public class TileFliper : MonoBehaviour
         TileBase t = _FrontMap.GetTile(vp);
         if (t != null)
         {
+            GameFlowManager._Main._FinalClickTilePos = _FrontMap.CellToWorld(vp);
             _FrontMap.SetTile(vp, null);
             Vector3Int[] vps = GameFlowManager._Main.getFlipArea(vp);
             for (int i = 0; i < vps.Length; i++)
@@ -120,5 +121,27 @@ public class TileFliper : MonoBehaviour
         }
 
         return c;
+    }
+
+    public Vector3 getWorldPos(Vector3Int vpi)
+    {
+        return _FrontMap.CellToWorld(vpi);
+    }
+
+    public Vector3Int[] getAllMarkedPos()
+    {
+        List<Vector3Int> vpis = new List<Vector3Int>();
+        for(int i=0; i<_XCount; i++)
+        {
+            for(int j=0; j<_YCount; j++)
+            {
+                TileBase t = _FrontMap.GetTile(new Vector3Int(i, j, 0));
+                if (t == _MarkType[1])
+                {
+                    vpis.Add(new Vector3Int(i,j,0));
+                }
+            }
+        }
+        return vpis.ToArray();
     }
 }

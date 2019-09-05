@@ -284,6 +284,23 @@ public class MineMaker : MonoBehaviour
             return false;
         }
     }
+
+    public Vector3[] getAllMineWorldPos()
+    {
+        List<Vector3> vps = new List<Vector3>();
+        for (int m = 0; m < _XCount; m++)
+        {
+            for (int n = 0; n < _YCount; n++)
+            {
+                if(isMineByPos(new Vector3Int(m, n, 0)))
+                {
+                    vps.Add(_BackMap.CellToWorld(new Vector3Int(m, n, 0)));
+                }
+            }
+        }
+
+        return vps.ToArray();
+    }
     
 
     #endregion

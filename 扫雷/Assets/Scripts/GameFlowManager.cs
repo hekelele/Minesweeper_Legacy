@@ -21,16 +21,31 @@ public class GameFlowManager : MonoBehaviour
     public int _MineCount = 10;
     private int _MineCountMark = 0;
 
+    public GameObject _DifficultyGO;
+
+    public Transform _SpriteFather;
+
     public static GameFlowManager _Main = null;
+
+    public GameObject _MineClickPrefab;
+    public GameObject _MineMarkedPrefab;
+    public GameObject _MineCorrectPrefab;
+
+    public Vector3 _FinalClickTilePos;
+
     public enum GameState
     {
         WAIT,
         RUNNING,
         END,
-        WIN
+        WIN,
+        CHANGE
     }
 
     private GameState _State = GameState.WAIT;
+    private GameState _StateCache;
+
+    private bool _CoolDown = true;
 
     private void Awake()
     {
@@ -53,6 +68,11 @@ public class GameFlowManager : MonoBehaviour
     {
         if(_State == GameState.WAIT)
         {
+            if (!_CoolDown)
+            {
+                _CoolDown = true;
+                return;
+            }
             if (Input.GetMouseButtonUp(0))
             {
                 Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -91,6 +111,14 @@ public class GameFlowManager : MonoBehaviour
                 _TF.changeMarking(pos);
                 _MineCountMark = _TF.getMineMarkNum();
                 _MineNumText.text = "" + (_MineCount - _MineCountMark);
+            }
+        }
+        else if (_State == GameState.CHANGE)
+        {
+            if (Input.GetMouseButtonUp(1))
+            {
+                _DifficultyGO.SetActive(false);
+                _State = _StateCache;
             }
         }
     }
@@ -162,6 +190,7 @@ public class GameFlowManager : MonoBehaviour
         _TF.clearAllTilesWhenReady();
         _SE.playSE("win");
         GameTimer._Main.stopTimer();
+        markAllMine(_MineCorrectPrefab);
     }
 
 
@@ -172,12 +201,55 @@ public class GameFlowManager : MonoBehaviour
         _TF.clearAllTilesWhenReady();
         _SE.playSE("explode");
         GameTimer._Main.stopTimer();
+
+        respawnSpriteAt(_FinalClickTilePos, _MineClickPrefab);
+        markAllMarkedMinePos(_MineMarkedPrefab);
+    }
+
+    public void changeDifficluty()
+    {
+        _StateCache = _State;
+        _DifficultyGO.SetActive(true);
+        _State = GameState.CHANGE;
+        _SE.playSE("click");
+    }
+
+    public void newGame(int difficulty)
+    {
+        switch (difficulty)
+        {
+            case 0: makeNewGame(9, 9, 10); break;
+            case 1: makeNewGame(16, 16, 40); break;
+            case 2: makeNewGame(32, 16, 99); break;
+            default: newGameRand(); break;
+        }
+    }
+
+    public void newGameRand()
+    {
+        _DifficultyGO.SetActive(false);
+        _YCount = Random.Range(9, 16);
+        _XCount = Random.Range(_YCount/2,_YCount*2);
+        _MineCount = Random.Range(1, Mathf.Min((_XCount * _YCount) / 2, _XCount * _YCount - 9));
+        makeNewGame(_XCount,_YCount,_MineCount);
+    }
+
+    public void makeNewGame(int x, int y, int m)
+    {
+        _XCount = x;
+        _YCount = y;
+        _MineCount = m;
+        _DifficultyGO.SetActive(false);
+        resetGame();
+        _CoolDown = false;
     }
 
 
     // 重新开始游戏
     public void resetGame()
     {
+        clearAllSprites();
+        _SE.playSE("reset");
         _State = GameState.END;
         _TF.makeField(_XCount, _YCount);
         _MM.emptyMineField(_XCount, _YCount);
@@ -199,5 +271,42 @@ public class GameFlowManager : MonoBehaviour
         _GridTransform.localScale = new Vector3(scale, scale, 1);
         _State = GameState.WAIT;
         GameTimer._Main.clear();
+    }
+
+    private void markAllMarkedMinePos(GameObject go)
+    {
+        Vector3Int[] vpis = _TF.getAllMarkedPos();
+        for(int i=0; i<vpis.Length; i++)
+        {
+            respawnSpriteAt(_TF.getWorldPos(vpis[i]), go);
+        }
+    }
+
+    private void markAllMine(GameObject go)
+    {
+        Vector3[] vps = _MM.getAllMineWorldPos();
+        for(int i=0; i<vps.Length; i++)
+        {
+            respawnSpriteAt(vps[i], go);
+        }
+    }
+
+
+    private void respawnSpriteAt(Vector3 pos, GameObject spritePrefab)
+    {
+        GameObject go = Instantiate(spritePrefab, pos,Quaternion.identity,_SpriteFather);
+        go.transform.localScale = _GridTransform.localScale;
+        go.transform.position += _GridTransform.localScale/2f;
+    }
+
+    private void clearAllSprites()
+    {
+        int cn = _SpriteFather.childCount;
+        _SpriteFather.gameObject.SetActive(false);
+        for (int i=0; i<cn; i++)
+        {
+            Destroy(_SpriteFather.GetChild(cn-i-1).gameObject);
+        }
+        _SpriteFather.gameObject.SetActive(true);
     }
 }

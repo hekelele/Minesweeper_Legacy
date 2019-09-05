@@ -38,6 +38,7 @@ public class GameTimer : MonoBehaviour
     public void clear()
     {
         _ClockText.text = "" + 0;
+        stopTimer();
     }
 
     private void Update()

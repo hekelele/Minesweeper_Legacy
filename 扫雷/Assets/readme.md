@@ -12,6 +12,7 @@ SE:
 
 cancel1
 decision2
+decision24
 
 (効果音ラボ:https://soundeffect-lab.info/)
 
