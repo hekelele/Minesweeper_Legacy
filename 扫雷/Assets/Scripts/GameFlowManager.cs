@@ -16,8 +16,8 @@ public class GameFlowManager : MonoBehaviour
     public Transform _BackgroundTransform;
 
     // Managers
-    public static GameFlowManager _Main = null;     // 单例
     public SEPlayer _SE;                            // 音效
+    public GameTimer _Timer;                        // 定时器
 
     // 游戏状态
     public enum GameState
@@ -50,19 +50,7 @@ public class GameFlowManager : MonoBehaviour
     public  Vector3 _FinalClickTilePos;     // 记录最后一次点击的位置（用于失败结局）
     private GameState _StateCache;          // 记录上一个状态（以判断之前是WAIT还是RUNNING）
     private bool _CoolDown = true;          // 用来吃掉转换难度按钮抬起后的屏幕点击
-
-    // 单例注册
-    private void Awake()
-    {
-        if (_Main != null)
-        {
-            Destroy(this.gameObject);
-        }
-        else
-        {
-            _Main = this;
-        }
-    }
+    
 
     // 开始游戏
     private void Start()
@@ -72,7 +60,8 @@ public class GameFlowManager : MonoBehaviour
 
     private void Update()
     {
-        if(_State == GameState.WAIT)
+        Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        if (_State == GameState.WAIT)
         {
             // 如果在等候状态，需要吃掉改变难度后的一次抬起
             if (!_CoolDown)
@@ -82,45 +71,33 @@ public class GameFlowManager : MonoBehaviour
             }
             if (Input.GetMouseButtonUp(0))
             {
-                // 左键踩地块 第一次点击生成地雷
-                Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                _SE.playSE("click");
-                // 如果在格子中才生成地雷
+                // 左键踩地块 第一次点击生成地雷(如果在格子中才生成地雷)
                 if (_MM.isPosInCells(pos))
                 {
                     _MM.makeMines(pos, _XCount, _YCount, _MineCount);
-                    _TF.clickTile(pos);
-                    _State = GameState.RUNNING;         
-                    GameTimer._Main.startTimer();       //定时器开始工作
-                    checkWinState();
+                    clickTile(pos);      
+                    _Timer.startTimer();       //定时器开始工作
+                }
+                else
+                {
+                    _SE.playSE("click");
                 }
             }
             else if (Input.GetMouseButtonUp(1))
             {
                 // 右键标记
-                _SE.playSE("mark");
-                Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                _TF.changeMarking(pos);
-                _MineCountMark = _TF.getMineMarkNum();
-                _MineNumText.text = "" + (_MineCount - _MineCountMark);
+                changeMark(pos);
             }
         }
         else if (_State == GameState.RUNNING)
         {
             if (Input.GetMouseButtonUp(0))
             {
-                _SE.playSE("click");
-                Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                _TF.clickTile(pos);
-                checkWinState();
+                clickTile(pos);
             }
             else if (Input.GetMouseButtonUp(1))
             {
-                _SE.playSE("mark");
-                Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                _TF.changeMarking(pos);
-                _MineCountMark = _TF.getMineMarkNum();
-                _MineNumText.text = "" + (_MineCount - _MineCountMark);
+                changeMark(pos);
             }
         }
         // 改变难度时
@@ -135,23 +112,49 @@ public class GameFlowManager : MonoBehaviour
         }
     }
 
-    // 检查是否胜利
-    private void checkWinState()
+
+    private void clickTile(Vector3 pos)
     {
-        // 正在运行 且 没有多余Tile留存
-        if (_State == GameState.RUNNING && _TF.getTileNum() <= _MineCount)
+        _SE.playSE("click");
+        Vector3Int vp = _TF.WorldToCell(pos);
+        _FinalClickTilePos = _TF.CellToWorld(vp);
+        if (_TF.clickTile(pos))
         {
-            winGame();
+            Vector3Int[] vpis = getFlipArea(vp);
+            for (int i = 0; i < vpis.Length; i++)
+            {
+                _TF.setTileByPosUncheck(vpis[i], null);
+            }
+
+            // 检查是否死亡
+            if (_MM.isMineByPos(vp))
+            {
+                endGame();
+            }
+            // 检查是否胜利
+            else if (_TF.getTileNum() <= _MineCount)
+            {
+                winGame();
+            }
         }
+        _State = GameState.RUNNING;
+
+        
+    }
+
+    private void changeMark(Vector3 pos)
+    {
+        _SE.playSE("mark");
+        _TF.changeMarking(pos);
+        _MineCountMark = _TF.getMineMarkNum();
+        _MineNumText.text = "" + (_MineCount - _MineCountMark);
     }
     
     // 游戏胜利
     private void winGame()
     {
         _State = GameState.WIN;
-        _TF.clearAllTilesWhenReady();       // 清空表面Tile
-        _SE.playSE("win");
-        GameTimer._Main.stopTimer();        // 定时器停止
+
 
         // 标记所有地雷
         Vector3[] vps = _MM.getAllMineWorldPos();
@@ -159,23 +162,28 @@ public class GameFlowManager : MonoBehaviour
         {
             respawnSpriteAt(vps[i], _MineMarkedPrefab);
         }
+
+        _MineNumText.text = "0";
+        _TF.clearAllTiles();       // 清空表面Tile
+        _SE.playSE("win");
+        _Timer.stopTimer();        // 定时器停止
     }
 
     // 结束游戏
     private void endGame()
     {
         _State = GameState.END;
-        _TF.clearAllTilesWhenReady();       // 清空表面Tile
-        _SE.playSE("explode");
-        GameTimer._Main.stopTimer();        // 定时器停止
-
         // 标记死亡地雷 和 猜了的地雷
         respawnSpriteAt(_FinalClickTilePos, _MineClickPrefab);
         Vector3Int[] vpis = _TF.getAllMarkedPos();
         for (int i = 0; i < vpis.Length; i++)
         {
-            respawnSpriteAt(_TF.getWorldPos(vpis[i]), _MineMarkedPrefab);
+            respawnSpriteAt(_TF.CellToWorld(vpis[i]), _MineMarkedPrefab);
         }
+        
+        _TF.clearAllTiles();       // 清空表面Tile
+        _SE.playSE("explode");
+        _Timer.stopTimer();        // 定时器停止
     }
 
     // 准备开始新游戏
@@ -192,8 +200,8 @@ public class GameFlowManager : MonoBehaviour
         _SE.playSE("reset");
 
         // 雷区初始化
-        _TF.makeField(_XCount, _YCount);
-        _MM.emptyMineField(_XCount, _YCount);
+        _TF.reset(_XCount, _YCount);
+        _MM.reset(_XCount, _YCount);
 
         // 计算网格及背景尺寸
         float scale;
@@ -213,7 +221,7 @@ public class GameFlowManager : MonoBehaviour
         _MineNumText.text = "" + (_MineCount - _MineCountMark);
         _GridTransform.localScale = new Vector3(scale, scale, 1);       //改变格子大小
         _State = GameState.WAIT;
-        GameTimer._Main.clear();        //计时器清空
+        _Timer.clear();        //计时器清空
     }
 
     // ------------------------Manager调用函数------------------------
@@ -267,11 +275,6 @@ public class GameFlowManager : MonoBehaviour
                     waitList.RemoveAt(0);
                 }
             }
-        }
-        // 是地雷的话 游戏结束
-        else
-        {
-            endGame();
         }
 
         // 返回被翻开的列表

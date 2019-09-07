@@ -3,176 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class MineMaker : MonoBehaviour
+public class MineMaker : TileMapPlus
 {
-    private Tilemap     _BackMap;
+    // Tile图形
     public Tile         _MineTile;
     public Tile[]       _MarkingTiles;
 
-    public enum MineSpreadType
+    // reset重写
+    public override void reset(int xx, int yy)
     {
-        NONE,
-        SAFE,
-        CLEAR
+        base.reset(xx, yy);
+        fillUp(_MarkingTiles[0]);
     }
 
-    public MineSpreadType _MineType = MineSpreadType.NONE;
-
-    private int _XCount, _YCount;
-
-
-    private void Awake()
-    {
-        _BackMap = GetComponent<Tilemap>();
-    }
-
-
-    // 通过索引获取坐标
-    private Vector2Int getTilePosByIndex(int i)
-    {
-        if (i >= _XCount * _YCount || i < 0)
-        {
-            return new Vector2Int(-1, -1);
-        }
-        else
-        {
-            int xx, yy;
-            xx = i % _XCount;
-            yy = i / _XCount;
-            return new Vector2Int(xx, yy);
-        }
-    }
-
-    // 通过坐标获取索引
-    private int getTileIndexByPos(Vector3Int vp)
-    {
-        if (isPosValid(vp))
-        {
-            return vp.y * _XCount + vp.x;
-        }
-        else
-        {
-            return -1;
-        }
-    }
-
-
-    // 填充指定索引的Tile
-    private void setTileByIndex(int i, Tile t)
-    {
-        Vector2Int pos = getTilePosByIndex(i);
-        if(pos.x>=0 && pos.y >= 0)
-        {
-            _BackMap.SetTile(new Vector3Int(pos.x, pos.y, 0), t);
-        }
-        else
-        {
-            Debug.LogError("index out range");
-        }
-    }
-
-    // 判断指定位置的Tile是否等于这个Tile
-    private bool isTileEqualByIndex(int i, Tile t)
-    {
-        Vector2Int pos = getTilePosByIndex(i);
-        if (pos.x >= 0 && pos.y >= 0)
-        {
-            TileBase bt = _BackMap.GetTile(new Vector3Int(pos.x, pos.y, 0));
-            if (bt == null)
-            {
-                return false;
-            }
-            if (bt == t)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    // 判断指定位置的Tile是否等于这个Tile
-    private bool isTileEqualByPos(int xx, int yy, Tile t)
-    {
-        if (xx>= 0 && yy >= 0)
-        {
-            TileBase bt = _BackMap.GetTile(new Vector3Int(xx,yy, 0));
-            if (bt == null)
-            {
-                return false;
-            }
-            if (bt == t)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    public void emptyMineField(int xx, int yy)
-    {
-        _BackMap.ClearAllTiles();
-        _XCount = xx;
-        _YCount = yy;
-        for(int i=0; i<xx; i++)
-        {
-            for(int j=0; j<yy; j++)
-            {
-                _BackMap.SetTile(new Vector3Int(i, j, 0), _MarkingTiles[0]);
-            }
-        }
-    }
 
     // 随机布雷
-    private void makeMineField(Vector3Int clickTilePos, int xx, int yy, int mm)
+    private void makeMineField(Vector3Int clickTilePos, int mineNumber)
     {
-        _XCount = xx;
-        _YCount = yy;
-        int mineNumber = mm;
         int maxMineNumber;
-        List<int> safePos = new List<int>();
-        switch (_MineType)
-        {
-            case MineSpreadType.NONE:
-                maxMineNumber = _XCount * _YCount;
-                break;
-            case MineSpreadType.SAFE:
-                maxMineNumber = _XCount * _YCount - 1;
-                int id =getTileIndexByPos(clickTilePos);
-                if (id > 0)
-                {
-                    safePos.Add(id);
-                }
-                break;
-            case MineSpreadType.CLEAR:
-            default:
-                maxMineNumber = _XCount * _YCount - 9;
-                for(int m=-1; m<2; m++)
-                {
-                    for(int n=-1; n<2; n++)
-                    {
-                        int id2 = getTileIndexByPos(new Vector3Int(clickTilePos.x + m, clickTilePos.y + n, 0));
-                        if (id2 > 0)
-                        {
-                            safePos.Add(id2);
-                        }
-                    }
-                }
-                break;
-        }
+        maxMineNumber = _XCount * _YCount - 9;
+        
+        List<int> safePos = new List<int>(getAllValidNeighbourIndex(clickTilePos));
+        safePos.Add(getTileIndexByPos(clickTilePos));
 
         if (mineNumber > maxMineNumber)
         {
@@ -180,9 +32,10 @@ public class MineMaker : MonoBehaviour
             mineNumber = maxMineNumber;
         }
 
+        // 算法解释见文档
         int[] flags = new int[_XCount * _YCount];
-        
-        for(int i=0; i<flags.Length; i++)
+
+        for (int i = 0; i < flags.Length; i++)
         {
             if (!safePos.Contains(i))
             {
@@ -194,7 +47,7 @@ public class MineMaker : MonoBehaviour
             }
         }
 
-        for(int i=0; i<flags.Length-1; i++)
+        for (int i = 0; i < flags.Length - 1; i++)
         {
             int ri = Random.Range(i, flags.Length - 1);
             (flags[i], flags[ri]) = (flags[ri], flags[i]);
@@ -219,72 +72,47 @@ public class MineMaker : MonoBehaviour
     // 计算标记
     private void makeMarkingNumbers()
     {
+        // 对所有tile遍历
         for (int i=0; i<_XCount*_YCount; i++)
         {
+            //如果不是地雷，那么计算提示数字
             if (!isTileEqualByIndex(i, _MineTile))
             {
+                //获得邻居坐标
+                Vector3Int vp = getTilePosByIndex(i);
+                Vector3Int[] nbs = getAllValidNeighbour(vp);
                 int mine_number = 0;
-                Vector2Int vp = getTilePosByIndex(i);
-                mine_number += isTileEqualByPos(vp.x - 1, vp.y, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x + 1, vp.y, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x, vp.y - 1, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x, vp.y + 1, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x - 1, vp.y - 1, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x - 1, vp.y + 1, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x + 1, vp.y - 1, _MineTile) ? 1 : 0;
-                mine_number += isTileEqualByPos(vp.x + 1, vp.y + 1, _MineTile) ? 1 : 0;
-                setTileByIndex(i, _MarkingTiles[mine_number]);
+                for (int k = 0; k < nbs.Length; k++)
+                {
+                    mine_number += isTileEqualByPos(nbs[k], _MineTile) ? 1 : 0;     //计算地雷个数
+                }
+                setTileByIndex(i, _MarkingTiles[mine_number]);                      //更加个数改变提示标记图案
             }
         }
     }
-
-    private bool isPosValid(Vector3Int vp)
-    {
-        if (vp.x < 0 || vp.y < 0 || vp.x >= _XCount || vp.y >= _YCount)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-
-
-    #region Public Area
-
-    public bool isMineByPos(Vector3Int vp)
-    {
-        return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MineTile);
-    }
-
-    public bool isEmptyByPos(Vector3Int vp)
-    {
-        return isPosValid(vp) && isTileEqualByPos(vp.x, vp.y, _MarkingTiles[0]);
-    }
     
 
+    // 查看对应坐标是否有雷
+    public bool isMineByPos(Vector3Int vp)
+    {
+        return isPosValid(vp) && isTileEqualByPos(vp, _MineTile);
+    }
+
+    // 查看对应坐标是否为空
+    public bool isEmptyByPos(Vector3Int vp)
+    {
+        return isPosValid(vp) && isTileEqualByPos(vp, _MarkingTiles[0]);
+    }
+    
+    // 布雷
     public void makeMines(Vector3 vp, int xx, int yy, int mm)
     {
-        _BackMap.ClearAllTiles();
-        makeMineField(_BackMap.WorldToCell(vp), xx, yy, mm);
-        makeMarkingNumbers();
+        reset(xx, yy);
+        makeMineField(_BaseTilemap.WorldToCell(vp),mm);     // 布雷
+        makeMarkingNumbers();                               // 计算提示数字
     }
 
-    public bool isPosInCells(Vector3 pos)
-    {
-        Vector3Int vp = _BackMap.WorldToCell(pos);
-        if (_BackMap.GetTile(vp) != null)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
+    // 获得所有地雷的世界坐标
     public Vector3[] getAllMineWorldPos()
     {
         List<Vector3> vps = new List<Vector3>();
@@ -294,14 +122,10 @@ public class MineMaker : MonoBehaviour
             {
                 if(isMineByPos(new Vector3Int(m, n, 0)))
                 {
-                    vps.Add(_BackMap.CellToWorld(new Vector3Int(m, n, 0)));
+                    vps.Add(_BaseTilemap.CellToWorld(new Vector3Int(m, n, 0)));
                 }
             }
         }
-
         return vps.ToArray();
     }
-    
-
-    #endregion
 }

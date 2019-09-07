@@ -3,67 +3,40 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class TileFliper : MonoBehaviour
+public class TileFliper : TileMapPlus
 {
-    private Tilemap _FrontMap;
     public Tile[] _MarkType;
-    // 单次调用，清理全部Tile（用于延时标记）
-    private bool _ClearAll = false;
 
-    private int _XCount, _YCount;
-
-    private void Awake()
+    // 重写的初始化
+    public override void reset(int xx, int yy)
     {
-        _FrontMap = GetComponent<Tilemap>();
+        base.reset(xx, yy);
+        fillUp(_MarkType[0]);
     }
     
-    private void Update()
+    // 点击Tile
+    public bool clickTile(Vector3 pos)
     {
-        if (_ClearAll)
+        Vector3Int vp = _BaseTilemap.WorldToCell(pos);
+        TileBase t = _BaseTilemap.GetTile(vp);
+        // 只有是空地的时候可以点击
+        if (t==_MarkType[0])
         {
-            _ClearAll = false;
-            _FrontMap.ClearAllTiles();
+            _BaseTilemap.SetTile(vp, null);
+            return true;
         }
+        return false;
     }
 
-    public void makeField(int xx, int yy)
-    {
-        _ClearAll = false;
-        _FrontMap.ClearAllTiles();
-        _XCount = xx;
-        _YCount = yy;
-        for (int m =0; m<_XCount; m++)
-        {
-            for(int n=0; n<_YCount; n++)
-            {
-                _FrontMap.SetTile(new Vector3Int(m, n, 0), _MarkType[0]);
-            }
-        }
-    }
-
-    public void clickTile(Vector3 pos)
-    {
-        Vector3Int vp = _FrontMap.WorldToCell(pos);
-        TileBase t = _FrontMap.GetTile(vp);
-        if (t != null)
-        {
-            GameFlowManager._Main._FinalClickTilePos = _FrontMap.CellToWorld(vp);
-            _FrontMap.SetTile(vp, null);
-            Vector3Int[] vps = GameFlowManager._Main.getFlipArea(vp);
-            for (int i = 0; i < vps.Length; i++)
-            {
-                _FrontMap.SetTile(vps[i], null);
-            }
-        }
-    }
-
+    // 改变Tile标记
     public void changeMarking(Vector3 pos)
     {
-        Vector3Int vp = _FrontMap.WorldToCell(pos);
-        TileBase t = _FrontMap.GetTile(vp);
+        Vector3Int vp = _BaseTilemap.WorldToCell(pos);
+        TileBase t = _BaseTilemap.GetTile(vp);
         if (t != null)
         {
             int type = -1;
+            // 几种标记循环改变
             for (int i = 0; i < _MarkType.Length; i++)
             {
                 if (_MarkType[i] == t)
@@ -75,7 +48,7 @@ public class TileFliper : MonoBehaviour
             if (type >= 0)
             {
                 type = (type + 1) % _MarkType.Length;
-                _FrontMap.SetTile(vp, _MarkType[type]);
+                _BaseTilemap.SetTile(vp, _MarkType[type]);
             }
             else
             {
@@ -84,27 +57,8 @@ public class TileFliper : MonoBehaviour
         }
     }
 
-    public void clearAllTilesWhenReady()
-    {
-        _ClearAll = true;
-    }
-
-    public int getTileNum()
-    {
-        int num = 0;
-        for (int m = 0; m < _XCount; m++)
-        {
-            for (int n = 0; n < _YCount; n++)
-            {
-                if(_FrontMap.GetTile(new Vector3Int(m, n, 0)) != null)
-                {
-                    num++;
-                }
-            }
-        }
-        return num;
-    }
-
+    
+    // 得到地雷标记数量
     public int getMineMarkNum()
     {
         int c = 0;
@@ -112,22 +66,14 @@ public class TileFliper : MonoBehaviour
         {
             for(int j=0; j<_YCount; j++)
             {
-                TileBase t = _FrontMap.GetTile(new Vector3Int(i,j,0));
-                if (t == _MarkType[1])
-                {
-                    c++;
-                }
+                c += isTileEqualByPos(new Vector3Int(i, j, 0), _MarkType[1]) ? 1 : 0;
             }
         }
 
         return c;
     }
-
-    public Vector3 getWorldPos(Vector3Int vpi)
-    {
-        return _FrontMap.CellToWorld(vpi);
-    }
-
+    
+    // 得到所有标记位置
     public Vector3Int[] getAllMarkedPos()
     {
         List<Vector3Int> vpis = new List<Vector3Int>();
@@ -135,7 +81,7 @@ public class TileFliper : MonoBehaviour
         {
             for(int j=0; j<_YCount; j++)
             {
-                TileBase t = _FrontMap.GetTile(new Vector3Int(i, j, 0));
+                TileBase t = _BaseTilemap.GetTile(new Vector3Int(i, j, 0));
                 if (t == _MarkType[1])
                 {
                     vpis.Add(new Vector3Int(i,j,0));

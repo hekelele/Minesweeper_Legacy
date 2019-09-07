@@ -5,24 +5,11 @@ using UnityEngine.UI;
 
 public class GameTimer : MonoBehaviour
 {
-    public static GameTimer _Main;
     public Text _ClockText;
 
     private bool _Run;
 
     private float _TimeStart;
-
-    private void Awake()
-    {
-        if (_Main == null)
-        {
-            _Main = this;
-        }
-        else
-        {
-            Destroy(this.gameObject);
-        }
-    }
 
     public void startTimer()
     {

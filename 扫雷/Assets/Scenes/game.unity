@@ -226,14 +226,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _TF: {fileID: 1658048473}
   _MM: {fileID: 857934870}
-  _SE: {fileID: 1218861917}
   _GridTransform: {fileID: 1299660485}
   _BorderTransform: {fileID: 818735255}
   _BackgroundTransform: {fileID: 1327339329}
+  _SE: {fileID: 1218861917}
+  _Timer: {fileID: 91180242}
   _MineNumText: {fileID: 1681014548}
-  _XCount: 9
-  _YCount: 9
-  _MineCount: 10
   _DifficultyGO: {fileID: 1603480180}
   _SpriteFather: {fileID: 305484204}
   _MineClickPrefab: {fileID: 7436902366590872287, guid: 0351a5489ec81da48a0c936ba679812e,
@@ -242,6 +240,9 @@ MonoBehaviour:
     type: 3}
   _MineCorrectPrefab: {fileID: 2053117702370063180, guid: 26e0c94250ca37a409f624c716f61f62,
     type: 3}
+  _XCount: 9
+  _YCount: 9
+  _MineCount: 10
   _FinalClickTilePos: {x: 0, y: 0, z: 0}
 --- !u!4 &208461818
 Transform:
@@ -2007,6 +2008,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9829330053ddca644aa46f31362cd3ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _DefaultTile: {fileID: 0}
   _MineTile: {fileID: 11400000, guid: 7601870d044f3be409853d091778f803, type: 2}
   _MarkingTiles:
   - {fileID: 11400000, guid: d3e623b3bcb15914387b4046528b43bc, type: 2}
@@ -2018,7 +2020,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eb0c3a3d6b897a148b9200d4756ec8db, type: 2}
   - {fileID: 11400000, guid: 7f067d5cf2716bd45be46f422c616d4b, type: 2}
   - {fileID: 11400000, guid: 11025df10bc49504baa5c9b34fd70bb9, type: 2}
-  _MineType: 2
 --- !u!1 &1028095919
 GameObject:
   m_ObjectHideFlags: 0
@@ -3382,6 +3383,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 564c5810e7c5cd44089d8232b8812385, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _DefaultTile: {fileID: 0}
   _MarkType:
   - {fileID: 11400000, guid: 55ac3349e822dec40877a0a952281a9f, type: 2}
   - {fileID: 11400000, guid: a3106ac8607450b40ac1d795e1d361f5, type: 2}
