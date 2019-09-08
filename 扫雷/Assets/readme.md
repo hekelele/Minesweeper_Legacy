@@ -3,8 +3,15 @@ Obelix Pro
 
 (Asterix & Obelix Pro Font Family library.:https://www.dafont.com/obelixpro.font)
 
+
 SE:
+爆破・爆発01
 爆破・爆発02
+爆破・爆発04
+爆破・爆発05
+爆破・爆発14
+爆破・破砕音01
+爆破・破砕音02
 勝利！（パンパカパ～～ン）
 
 (On-Jin ～音人～:https://on-jin.com/)

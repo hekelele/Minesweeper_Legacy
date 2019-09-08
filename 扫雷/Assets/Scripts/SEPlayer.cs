@@ -13,17 +13,20 @@ public class SEPlayer : MonoBehaviour
     }
 
     [SerializeField] public List<MusicLink> _Dict;
-    private AudioSource _SE;
 
-    private void Awake()
-    {
-        _SE = GetComponent<AudioSource>(); 
-    }
+    public GameObject _SEPiece;
+    
 
     public void playSE(string key)
     {
-        _SE.clip = findClipByKey(key);
-        _SE.Play();
+        SE_Piexe sp = Instantiate(_SEPiece, Vector3.zero,Quaternion.identity).GetComponent<SE_Piexe>();
+        sp.playClip(findClipByKey(key));
+    }
+
+    public void playSE(string key, float stereoPan)
+    {
+        SE_Piexe sp = Instantiate(_SEPiece, Vector3.zero, Quaternion.identity).GetComponent<SE_Piexe>();
+        sp.playClip(findClipByKey(key),stereoPan);
     }
 
     public AudioClip findClipByKey(string key)

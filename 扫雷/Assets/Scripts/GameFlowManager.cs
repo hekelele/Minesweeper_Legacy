@@ -50,11 +50,16 @@ public class GameFlowManager : MonoBehaviour
     public  Vector3 _FinalClickTilePos;     // 记录最后一次点击的位置（用于失败结局）
     private GameState _StateCache;          // 记录上一个状态（以判断之前是WAIT还是RUNNING）
     private bool _CoolDown = true;          // 用来吃掉转换难度按钮抬起后的屏幕点击
-    
+
+    public float _TriggerIntervalPerUnit = 0.3f;    // 单位距离引爆时间差
+    public float _TriggerIntervalPadding = 0.1f;
+    public float _StereoPanMult = 0.2f;
+    private IEnumerator _ExplodeLink;
 
     // 开始游戏
     private void Start()
     {
+        _ExplodeLink = triggerAllMines();
         newGame(0);
     }
 
@@ -99,6 +104,11 @@ public class GameFlowManager : MonoBehaviour
             {
                 changeMark(pos);
             }
+
+            if (Input.GetKeyUp(KeyCode.R))
+            {
+                resetGame();
+            }
         }
         // 改变难度时
         else if (_State == GameState.CHANGE)
@@ -108,6 +118,13 @@ public class GameFlowManager : MonoBehaviour
             {
                 _DifficultyGO.SetActive(false);
                 _State = _StateCache;
+            }
+        }
+        else if (_State == GameState.END)
+        {
+            if (Input.GetKeyUp(KeyCode.R))
+            {
+                resetGame();
             }
         }
     }
@@ -182,8 +199,9 @@ public class GameFlowManager : MonoBehaviour
         }
         
         _TF.clearAllTiles();       // 清空表面Tile
-        _SE.playSE("explode");
         _Timer.stopTimer();        // 定时器停止
+        _ExplodeLink = triggerAllMines();
+        StartCoroutine(_ExplodeLink);
     }
 
     // 准备开始新游戏
@@ -316,6 +334,7 @@ public class GameFlowManager : MonoBehaviour
     // 重新以当前难度开始游戏
     public void resetGame()
     {
+        StopCoroutine(_ExplodeLink);
         makeNewGame(_XCount, _YCount, _MineCount);
     }
 
@@ -338,5 +357,38 @@ public class GameFlowManager : MonoBehaviour
             Destroy(_SpriteFather.GetChild(cn-i-1).gameObject);     // 这里倒着删是为了解决Unity对象计数问题
         }
         _SpriteFather.gameObject.SetActive(true);
+    }
+
+    private IEnumerator triggerAllMines()
+    {
+        Vector3 origin = _FinalClickTilePos;
+        Vector3[] vps = _MM.getAllMineWorldPos();
+
+        for(int i=0; i<vps.Length; i++)
+        {
+            for (int j = 0; j < vps.Length - i - 1; j++)
+            {
+                if (Vector3.Distance(origin,vps[j]) > Vector3.Distance(origin, vps[j+1]))
+                {
+                    (vps[j], vps[j + 1]) = (vps[j + 1], vps[j]);
+                }
+
+            }
+        }
+
+        float lastDistence = 0;
+        for(int k = 0; k<vps.Length; k++)
+        {
+            float newDistence = _TriggerIntervalPerUnit * Vector3.Distance(origin, vps[k]);
+            float pan = vps[k].x * _StereoPanMult;
+            yield return new WaitForSeconds(newDistence-lastDistence + _TriggerIntervalPadding);
+            lastDistence = newDistence;
+            int num = Random.Range(1,5);
+            _SE.playSE("explode"+num,pan);
+            respawnSpriteAt(vps[k], _MineClickPrefab);
+        }
+
+
+        yield return new WaitForEndOfFrame();
     }
 }
