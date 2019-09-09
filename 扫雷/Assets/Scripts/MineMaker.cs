@@ -54,7 +54,7 @@ public class MineMaker : TileMapPlus
         }
 
         int mines = 0;
-        for (int i = 0; i < mineNumber + (_XCount * _YCount - maxMineNumber); i++)
+        for (int i = 0; i < _XCount * _YCount; i++)
         {
             int pos = flags[i];
             if (pos >= 0)
