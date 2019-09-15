@@ -49,7 +49,7 @@ public class MineMaker : TileMapPlus
 
         for (int i = 0; i < flags.Length - 1; i++)
         {
-            int ri = Random.Range(i, flags.Length - 1);
+            int ri = Random.Range(i, flags.Length);
             (flags[i], flags[ri]) = (flags[ri], flags[i]);
         }
 
